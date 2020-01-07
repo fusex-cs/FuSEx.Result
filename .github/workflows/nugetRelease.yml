@@ -1,0 +1,33 @@
+name: Nuget Release
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.0.100
+
+    - name: Build with dotnet
+      run: dotnet build FuSEx.Result/FuSEx.Result.csproj --configuration Release
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Pack nuget package
+        run: dotnet pack FuSEx.Result/FuSEx.Result.csproj --configuration Release -p:PackageVersion=$(git describe)
+
+      - name: Push nuget package
+        run: dotnet nuget push FuSEx.Result/bin/Release/FuSEx.Result.$(git describe).nupkg
+          --api-key ${{ secrets.Nuget_Deploy_Key }} 
+          --source https://api.nuget.org/v3/index.json
